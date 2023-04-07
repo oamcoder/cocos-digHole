@@ -1,0 +1,16 @@
+{
+  "name": "dighole",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/earcut": "^2.1.1",
+    "earcut": "^2.2.4"
+  }
+}
