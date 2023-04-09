@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@types/earcut": "^2.1.1",
-    "earcut": "^2.2.4"
+    "@types/intersects": "^2.5.0",
+    "earcut": "^2.2.4",
+    "intersects": "^2.7.2"
   }
 }

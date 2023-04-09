@@ -1,7 +1,6 @@
 import GPCPolygon from './GPCPolygon'
-import PhysicsBound from './PhysicsBound'
 
-const { ccclass, property } = cc._decorator;
+const {ccclass, property} = cc._decorator
 
 @ccclass
 export default class Touch extends cc.Component {
@@ -25,11 +24,6 @@ export default class Touch extends cc.Component {
         type: GPCPolygon
     })
     protected gpcPolygon: GPCPolygon = null
-
-    @property({
-        type: PhysicsBound
-    })
-    protected physicsBound: PhysicsBound = null
 
     protected readonly lastTouchPos = cc.v2()
     protected readonly curTouchPos = cc.v2()

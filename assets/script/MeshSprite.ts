@@ -1,6 +1,4 @@
-import { GPCTrianglePolygon } from './IGPCType'
-
-const { ccclass, property, requireComponent } = cc._decorator
+const {ccclass, property, requireComponent} = cc._decorator
 
 interface SpriteVerticesType {
     x: number[];
@@ -30,7 +28,7 @@ export default class MeshSprite extends cc.Component {
         this.sprite.spriteFrame['vertices'] = this.vertices
     }
 
-    stroke(data: GPCTrianglePolygon[]) {
+    stroke(data: gpc.Vertex[][]) {
         // console.log('查看data: ', data)
         for (const key in this.vertices) {
             this.vertices[key].length = 0
@@ -41,20 +39,17 @@ export default class MeshSprite extends cc.Component {
         const w2 = w / 2
         const h2 = h / 2
         for (const item of data) {
-            let num = 0;
-            for (let i = 0; i < item.vertices.length - 1; i += 2) {
-                const x = item.vertices[i]
-                const y = item.vertices[i + 1]
+            let num = 0
+            for (let i = 0; i < item.length; i++) {
+                const {x, y} = item[i]
                 this.vertices.x.push(x)
                 this.vertices.y.push(y)
                 this.vertices.nu.push((x + w2) / w)
                 this.vertices.nv.push(1 - (y + h2) / h)
-                num++;
+                this.vertices.triangles.push(triangleOffset, triangleOffset + 1, triangleOffset + 2)
+                num++
             }
-            for (const index of item.triangles) {
-                this.vertices.triangles.push(triangleOffset + index)
-            }
-            triangleOffset += num;
+            triangleOffset += num
         }
         // console.log('查看数据', this.vertices)
         this.sprite['setVertsDirty']()
