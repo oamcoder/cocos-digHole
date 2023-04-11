@@ -1,6 +1,6 @@
-import { GPCTrianglePolygon } from './IGPCType'
+import {GPCTrianglePolygon} from './IGPCType'
 
-const { ccclass, property, requireComponent } = cc._decorator
+const {ccclass, property, requireComponent} = cc._decorator
 
 interface SpriteVerticesType {
     x: number[];
@@ -56,7 +56,7 @@ export default class MeshSprite extends cc.Component {
             }
             triangleOffset += num;
         }
-        // console.log('查看数据', this.vertices)
+        // console.log('查看顶点数据', this.vertices)
         this.sprite['setVertsDirty']()
     }
 }

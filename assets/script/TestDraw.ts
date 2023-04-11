@@ -1,6 +1,6 @@
-import { GPCTrianglePolygon } from './IGPCType'
+import {GPCTrianglePolygon} from './IGPCType'
 
-const { ccclass, property } = cc._decorator;
+const {ccclass, property} = cc._decorator;
 
 @ccclass
 export default class TestDraw extends cc.Component {

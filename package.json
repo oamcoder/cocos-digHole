@@ -10,7 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tweakpane/core": "^1.1.6",
     "@types/earcut": "^2.1.1",
-    "earcut": "^2.2.4"
+    "@types/intersects": "^2.5.0",
+    "earcut": "^2.2.4",
+    "intersects": "^2.7.2",
+    "tweakpane": "^3.1.7"
   }
 }

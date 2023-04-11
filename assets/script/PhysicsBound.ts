@@ -1,48 +1,79 @@
-const { ccclass, property } = cc._decorator;
+import {circlePolygon} from "intersects";
+import {flattenPoints} from "./Util";
+
+const {ccclass, property} = cc._decorator;
+
+const PTM_RATIO = cc.PhysicsManager.PTM_RATIO
 
 @ccclass
 export default class PhysicsBound extends cc.Component {
 
     protected world: b2.World
-    protected chainShapePool: cc.PhysicsChainCollider[] = []
-    protected rigidBody: cc.RigidBody
+    protected body: b2.Body
+    protected vec2Pool: cc.Vec2[] = []
+    protected chainShapePool: b2.ChainShape[] = []
+    protected chainFixtures: b2.Fixture[] = []
 
-    createPolygonRigidbody(polygons: gpc.Vertex[][]) {
-        //TODO:使用box2d物理，考虑四叉树
-        const existShape = this.getComponents(cc.PhysicsChainCollider)
-        let i = 0
-        for (; i < polygons.length; i++) {
-            const polygon = polygons[i]
-            let shape = existShape[i]
-            if (!shape)
-                shape = this.addComponent(cc.PhysicsChainCollider)
-            shape.enabled = true
-            shape.loop = true
-            shape.points.length = 0
-            for (let i = 0; i < polygon.length; i++) {
-                const p = polygon[i]
-                if (!shape.points[i])
-                    shape.points[i] = cc.v2()
-                cc.Vec2.set(shape.points[i], p.x, p.y)
-            }
-            //@ts-ignore
-            //傻逼cocos声明文件都写错了
-            shape.apply()
+    cleanFixtures() {
+        for (let fixture of this.chainFixtures) {
+            this.body.DestroyFixture(fixture)
         }
-        for (let j = i; j < existShape.length; j++) {
-            if (existShape[j])
-                existShape[j].enabled = false
+        this.chainFixtures.length = 0
+    }
+
+    createPolygonRigidBody(polygons: gpc.Vertex[][], dynamicBody: cc.Node[]) {
+        //todo:考虑是否使用四叉树查找
+        const temp: number[] = []
+        const candidatePolygons = new Array<gpc.Vertex[]>()
+        for (let body of dynamicBody) {
+            const x = body.x
+            const y = body.y
+            const r = Math.max(body.height / 2, body.width / 2)
+            for (const polygon of polygons) {
+                flattenPoints(polygon, temp)
+                if (!candidatePolygons.find(poly => poly == polygon) && circlePolygon(x, y, r, temp)) {
+                    candidatePolygons.push(polygon)
+                }
+                temp.length = 0
+            }
+        }
+        this.cleanFixtures()
+        if (candidatePolygons.length == 0)
+            return
+        for (let i = 0; i < candidatePolygons.length; i++) {
+            const candidatePolygon = candidatePolygons[i]
+            let shape = this.chainShapePool[i]
+            if (!shape) {
+                shape = new b2.ChainShape
+                this.chainShapePool.push(shape)
+            }
+            const chainPoints: cc.Vec2[] = []
+            for (let j = 0; j <= candidatePolygon.length; j++) {
+                let p = candidatePolygon[j]
+                if (j == candidatePolygon.length)
+                    p = candidatePolygon[0]
+                let v2 = this.vec2Pool.pop()
+                if (!v2)
+                    v2 = cc.v2()
+                v2.set(p as cc.Vec2)
+                this.node.convertToWorldSpaceAR(v2, v2)
+                v2.x /= PTM_RATIO
+                v2.y /= PTM_RATIO
+                chainPoints.push(v2)
+            }
+            shape.CreateChain(chainPoints)
+            for (let chainPoint of chainPoints) {
+                this.vec2Pool.push(chainPoint)
+            }
+            this.chainFixtures.push(this.body.CreateFixtureShapeDensity(shape, 0))
         }
     }
 
     protected onLoad(): void {
         const phyMgr = cc.director.getPhysicsManager()
         phyMgr.enabled = true
-        // phyMgr.debugDrawFlags = cc.PhysicsManager.DrawBits.e_aabbBit |
-        //     cc.PhysicsManager.DrawBits.e_jointBit |
-        //     cc.PhysicsManager.DrawBits.e_shapeBit;
         //@ts-ignore
         this.world = phyMgr._world
-        this.rigidBody = this.getComponent(cc.RigidBody)
+        this.body = this.world.CreateBody(new b2.BodyDef())
     }
 }

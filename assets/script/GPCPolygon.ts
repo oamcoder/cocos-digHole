@@ -1,80 +1,94 @@
 import * as earcut from 'earcut'
 import TestDraw from './TestDraw'
 import MeshSprite from './MeshSprite'
-import { GPCTrianglePolygon } from './IGPCType'
+import {DrawMesh, GPCTrianglePolygon} from './IGPCType'
+import {polygonPolygon} from 'intersects'
+import {flattenPoints} from './Util'
 import ccclass = cc._decorator.ccclass
 import property = cc._decorator.property
-import PhysicsBound from './PhysicsBound'
 
 @ccclass
 export default class GPCPolygon extends cc.Component {
+
+    @property({
+        displayName: '分割行列数'
+    })
+    protected blockConfig = cc.v2()
+
+    @property({
+        displayName: '允许丢弃的最小面积'
+    })
+    protected minDiscardArea: number = 10
 
     @property({
         type: MeshSprite
     })
     protected meshSprite: MeshSprite = null
 
-    @property({
-        type: PhysicsBound
-    })
-    protected physicsBound: PhysicsBound = null
-
-    protected polygons: { bound: gpc.Polygon, hole?: gpc.Polygon }[]
+    protected polygons: gpc.Polygon[]
 
     get boundPolygons() {
         const arr: Array<gpc.Vertex[]> = []
-        const convertFn = (poly: gpc.Polygon) => {
+        for (let polygon of this.polygons) {
             const temp: gpc.Vertex[] = []
             arr.push(temp)
-            for (let i = 0; i < poly.getNumPoints(); i++) {
-                temp.push(poly.get(i))
+            for (let i = 0; i < polygon.getNumPoints(); i++) {
+                temp.push(polygon.get(i))
             }
         }
-        this.polygons.forEach(item => {
-            let execPoly = item.bound.difference(item.hole)
-            const execArr = execPoly.explode()
-            execArr.forEach(poly => {
-                poly.getInnerPolies().forEach(convertFn)
-            })
-        })
         return arr
     }
 
     get trianglePolygons() {
         const arr: GPCTrianglePolygon[] = []
-        this.polygons.forEach(item => {
-            let execPoly = item.bound.difference(item.hole)
-            const execArr = execPoly.explode()
-            execArr.forEach(polygon => {
-                let data: GPCTrianglePolygon
-                const holes: number[] = []
-                for (let subPolygon of polygon.getInnerPolies()) {
-                    if (!subPolygon.isHole) {
-                        data = {
-                            vertices: [],
-                            triangles: null
-                        }
-                        arr.push(data)
-                    } else {
-                        holes.push(data.vertices.length / 2)
-                    }
-                    for (let i = 0; i < subPolygon.getNumPoints(); i++) {
-                        const xy = subPolygon.get(i)
-                        data.vertices.push(xy.x, xy.y)
-                    }
+        for (let polygon of this.polygons) {
+            let data: GPCTrianglePolygon = {
+                vertices: [],
+                triangles: null
+            }
+            arr.push(data)
+            const inner = polygon.getInnerPolies()
+            for (let poly of inner) {
+                const len = poly.getNumPoints()
+                //todo：不知道为啥还会切出一个点的polygon❓
+                if (len < 2) continue
+                for (let i = 0; i < len; i++) {
+                    const xy = poly.get(i)
+                    data.vertices.push(xy.x, xy.y)
                 }
-                data.triangles = earcut(data.vertices, holes)
-            })
-        })
+            }
+            data.triangles = earcut(data.vertices)
+        }
         return arr
     }
 
-    mergePolygon(points: gpc.ExternalVertex[]) {
-        let newPolygon = gpc.Polygon.fromPoints(points)
-        this.polygons.forEach((item, index) => {
-            this.polygons[index].hole = item.hole.union(newPolygon)
-        })
-        this.draw()
+    mergePolygon(points: gpc.ExternalVertex[], draw = true) {
+        const checkBoolPolygons: gpc.Polygon[] = []
+        const leftoverPolygons: gpc.Polygon[] = []
+        const tempArr1: number[] = []
+        const tempArr2: number[] = []
+        let hole = gpc.Polygon.fromPoints(points)
+        flattenPoints(hole, tempArr1)
+        //todo:是否考虑用四叉树寻找进行布尔运算的多边形
+        for (let polygon of this.polygons) {
+            tempArr2.length = 0
+            flattenPoints(polygon, tempArr2)
+            polygonPolygon(tempArr1, tempArr2) ?
+                checkBoolPolygons.push(polygon) : leftoverPolygons.push(polygon)
+        }
+        this.polygons.length = 0
+        // console.log('待进行bool运算的多边形数量', checkBoolPolygons.length)
+        if (checkBoolPolygons.length > 0) {
+            for (let checkBoolPolygon of checkBoolPolygons) {
+                const polygon = checkBoolPolygon.difference(hole)
+                //切出空的多边形、面积过小的多边形直接丢弃
+                if (polygon.getNumPoints() != 0 && Math.abs(polygon.getArea()) >= this.minDiscardArea)
+                    this.polygons.push(polygon)
+            }
+        }
+        this.polygons = this.polygons.concat(leftoverPolygons)
+        if (draw)
+            this.draw()
     }
 
     protected onLoad() {
@@ -87,72 +101,42 @@ export default class GPCPolygon extends cc.Component {
 
     protected draw() {
         this.meshSprite.stroke(this.trianglePolygons)
-        this.physicsBound.createPolygonRigidbody(this.boundPolygons)
-        // this.drawTest()
+        this.drawTest()
     }
 
     protected init() {
-        const addVerticesFromRect = (node: cc.Node, arr: gpc.ExternalVertex[]) => {
-            const w2 = node.width / 2
-            const h2 = node.height / 2
-            if (w2 == 0 && h2 == 0) throw new Error(`没有cc.PolygonCollider，矩形边不能为0  name:${node.name}`)
-            arr.push(
-                [w2, h2],
-                [-w2, h2],
-                [-w2, -h2],
-                [w2, -h2],
-            )
-        }
         this.polygons = []
-        const bounds = this.node.children
-        if (bounds.length == 0) {
-            const arr = []
-            addVerticesFromRect(this.node, arr)
-            this.polygons.push({ bound: gpc.Polygon.fromPoints(arr) })
-        } else {
-            const addVerticesFromCtrl = (ctrl: cc.PolygonCollider, arr: gpc.ExternalVertex[], remove: boolean) => {
-                ctrl.points.forEach(p => {
-                    arr.push([p.x + ctrl.offset.x, p.y + ctrl.offset.y])
-                })
-                if (remove)
-                    ctrl.node.destroy()
-            }
-            bounds.forEach(node => {
-                const bound: gpc.ExternalVertex[] = []
-                const holes: Array<gpc.ExternalVertex[]> = []
-                const bCtrl = node.getComponent(cc.PolygonCollider)
-                if (!bCtrl)
-                    addVerticesFromRect(node, bound)
-                else
-                    addVerticesFromCtrl(bCtrl, bound, false)
-                if (node.childrenCount == 1) {
-                    const holeNode = node.children[0]
-                    const ctrls = holeNode.getComponents(cc.PolygonCollider)
-                    if (ctrls.length == 0) {
-                        const arr = []
-                        addVerticesFromRect(holeNode, arr)
-                        holes.push(arr)
-                    } else {
-                        ctrls.forEach(ctrl => {
-                            const arr: gpc.ExternalVertex[] = []
-                            holes.push(arr)
-                            addVerticesFromCtrl(ctrl, arr, true)
-                        })
-                    }
-                }
-                let boundPoly = gpc.Polygon.fromPoints(bound)
-                let holePoly: gpc.Polygon
-                holes.forEach(hole => {
-                    const poly = gpc.Polygon.fromPoints(hole)
-                    if (!holePoly)
-                        holePoly = poly
-                    else
-                        holePoly = holePoly.union(poly)
-                })
-                this.polygons.push({ bound: boundPoly, hole: holePoly })
-            })
+        const row = Math.floor(this.blockConfig.x)
+        const col = Math.floor(this.blockConfig.y)
+        const startX = -this.node.width / 2
+        const startY = this.node.height / 2
+        const w = this.node.width / col
+        const h = this.node.height / row
+        for (let i = 0; i < row * col; i++) {
+            const rowIndex = Math.floor(i / col)
+            const colIndex = i % col
+            const x = startX + colIndex * w
+            const y = startY - rowIndex * h
+            this.polygons.push(gpc.Polygon.fromPoints([
+                [x, y],
+                [x, y - h],
+                [x + w, y - h],
+                [x + w, y]
+            ]))
         }
-        // console.log('this.polygons = ', this.polygons)
+        const holeNode = this.node.getChildByName('hole')
+        if (holeNode) {
+            const polygonCtrls = holeNode.getComponentsInChildren(cc.PolygonCollider)
+            const temp: gpc.ExternalVertex[] = []
+            for (const ctrl of polygonCtrls) {
+                for (let point of ctrl.points) {
+                    temp.push([point.x + ctrl.offset.x, point.y + ctrl.offset.y])
+                }
+                this.mergePolygon(temp, false)
+                temp.length = 0
+            }
+            holeNode.destroy()
+        }
     }
 
     /**可视化mesh------------------------------------------------------------*/
@@ -162,21 +146,24 @@ export default class GPCPolygon extends cc.Component {
     })
     private readonly testDraw: TestDraw = null
 
-    private drawTag: boolean
+    set drawTag(tag: DrawMesh) {
+        this._drawTag = tag
+        this.drawTest()
+    }
+
+    private _drawTag: DrawMesh = DrawMesh.None
 
     private drawTest() {
-        this.drawTag ? this.drawTriangles() : this.drawPolygons()
+        if (this._drawTag == DrawMesh.None) return
+        this._drawTag == DrawMesh.Triangles ?
+            this.drawTriangles() : this.drawPolygons()
     }
 
     private drawPolygons() {
-        if (this.drawTag)
-            this.drawTag = false
         this.testDraw.drawPolygons(this.boundPolygons)
     }
 
     private drawTriangles() {
-        if (!this.drawTag)
-            this.drawTag = true
         this.testDraw.drawTriangles(this.trianglePolygons)
     }
 }
