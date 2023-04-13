@@ -201,6 +201,7 @@ declare module b2 {
 
     declare class ChainShape extends b2.Shape {
         CreateChain(points: Array<b2Vec2>);
+        CreateLoop(points: Array<b2Vec2>);
     }
 
     declare class CircleShape extends b2.Shape {

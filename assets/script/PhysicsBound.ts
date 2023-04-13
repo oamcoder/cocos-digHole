@@ -37,9 +37,9 @@ export default class PhysicsBound extends cc.Component {
                 temp.length = 0
             }
         }
-        this.cleanFixtures()
         if (candidatePolygons.length == 0)
             return
+        this.cleanFixtures()
         for (let i = 0; i < candidatePolygons.length; i++) {
             const candidatePolygon = candidatePolygons[i]
             let shape = this.chainShapePool[i]
@@ -48,10 +48,8 @@ export default class PhysicsBound extends cc.Component {
                 this.chainShapePool.push(shape)
             }
             const chainPoints: cc.Vec2[] = []
-            for (let j = 0; j <= candidatePolygon.length; j++) {
+            for (let j = 0; j < candidatePolygon.length; j++) {
                 let p = candidatePolygon[j]
-                if (j == candidatePolygon.length)
-                    p = candidatePolygon[0]
                 let v2 = this.vec2Pool.pop()
                 if (!v2)
                     v2 = cc.v2()
@@ -61,7 +59,7 @@ export default class PhysicsBound extends cc.Component {
                 v2.y /= PTM_RATIO
                 chainPoints.push(v2)
             }
-            shape.CreateChain(chainPoints)
+            shape.CreateLoop(chainPoints)
             for (let chainPoint of chainPoints) {
                 this.vec2Pool.push(chainPoint)
             }

@@ -6,6 +6,7 @@ import {polygonPolygon} from 'intersects'
 import {flattenPoints} from './Util'
 import ccclass = cc._decorator.ccclass
 import property = cc._decorator.property
+import PhysicsBound from "./PhysicsBound";
 
 @ccclass
 export default class GPCPolygon extends cc.Component {
@@ -24,6 +25,11 @@ export default class GPCPolygon extends cc.Component {
         type: MeshSprite
     })
     protected meshSprite: MeshSprite = null
+
+    @property({
+        type: PhysicsBound
+    })
+    protected physicsBound: PhysicsBound = null
 
     protected polygons: gpc.Polygon[]
 
@@ -101,6 +107,7 @@ export default class GPCPolygon extends cc.Component {
 
     protected draw() {
         this.meshSprite.stroke(this.trianglePolygons)
+        this.physicsBound.cleanFixtures()
         this.drawTest()
     }
 
@@ -154,7 +161,10 @@ export default class GPCPolygon extends cc.Component {
     private _drawTag: DrawMesh = DrawMesh.None
 
     private drawTest() {
-        if (this._drawTag == DrawMesh.None) return
+        if (this._drawTag == DrawMesh.None) {
+            this.testDraw.clean()
+            return
+        }
         this._drawTag == DrawMesh.Triangles ?
             this.drawTriangles() : this.drawPolygons()
     }

@@ -11,6 +11,10 @@ export default class TestDraw extends cc.Component {
         this.graphics = this.node.getComponent(cc.Graphics)
     }
 
+    clean() {
+        this.graphics.clear(true)
+    }
+
     drawPolygons(polygons: gpc.Vertex[][]) {
         this.graphics.clear(true)
         polygons.forEach(polygon => {

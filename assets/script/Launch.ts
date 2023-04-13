@@ -32,9 +32,7 @@ export default class Launch extends cc.Component {
                 if (body.type == cc.RigidBodyType.Dynamic)
                     temp.push(body.node)
             }
-            if (temp.length == 0)
-                this.physicsBound.cleanFixtures()
-            else
+            if (temp.length != 0)
                 this.physicsBound.createPolygonRigidBody(this.gpcPolygon.boundPolygons, temp)
         }
         this.curTimeDelta += dt
