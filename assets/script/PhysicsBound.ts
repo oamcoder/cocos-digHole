@@ -1,5 +1,5 @@
 import {circlePolygon} from "intersects";
-import {flattenPoints} from "./Util";
+import {flattenPoints, isPolygonIntersectCircle} from "./Util";
 
 const {ccclass, property} = cc._decorator;
 
@@ -8,11 +8,28 @@ const PTM_RATIO = cc.PhysicsManager.PTM_RATIO
 @ccclass
 export default class PhysicsBound extends cc.Component {
 
+    @property({
+        displayName: '物理更新间隔时间',
+        tooltip: '数字越大时间间隔越短'
+    })
+    protected FIXED_TIME_STEP: number = 30
+
+    @property({
+        displayName: '速度更新迭代数'
+    })
+    protected VELOCITY_ITERATIONS: number = 5
+
+    @property({
+        displayName: '位置迭代更新数'
+    })
+    protected POSITION_ITERATIONS: number = 5
+
     protected world: b2.World
     protected body: b2.Body
     protected vec2Pool: cc.Vec2[] = []
     protected chainShapePool: b2.ChainShape[] = []
     protected chainFixtures: b2.Fixture[] = []
+    protected tempVertex: gpc.Vertex = {x: 0, y: 0}
 
     cleanFixtures() {
         for (let fixture of this.chainFixtures) {
@@ -22,19 +39,19 @@ export default class PhysicsBound extends cc.Component {
     }
 
     createPolygonRigidBody(polygons: gpc.Vertex[][], dynamicBody: cc.Node[]) {
-        //todo:考虑是否使用四叉树查找
-        const temp: number[] = []
+        const circleCenter: gpc.Vertex = this.tempVertex
         const candidatePolygons = new Array<gpc.Vertex[]>()
         for (let body of dynamicBody) {
             const x = body.x
             const y = body.y
             const r = Math.max(body.height / 2, body.width / 2)
+            circleCenter.x = x
+            circleCenter.y = y
             for (const polygon of polygons) {
-                flattenPoints(polygon, temp)
-                if (!candidatePolygons.find(poly => poly == polygon) && circlePolygon(x, y, r, temp)) {
+                const isEmpty = !candidatePolygons.find(poly => poly == polygon)
+                const isIntersect = isPolygonIntersectCircle(polygon, circleCenter, r)
+                if (isEmpty && isIntersect)
                     candidatePolygons.push(polygon)
-                }
-                temp.length = 0
             }
         }
         if (candidatePolygons.length == 0)
@@ -70,6 +87,10 @@ export default class PhysicsBound extends cc.Component {
     protected onLoad(): void {
         const phyMgr = cc.director.getPhysicsManager()
         phyMgr.enabled = true
+        phyMgr.enabledAccumulator = true
+        cc.PhysicsManager.FIXED_TIME_STEP = 1 / this.FIXED_TIME_STEP
+        cc.PhysicsManager.VELOCITY_ITERATIONS = this.VELOCITY_ITERATIONS
+        cc.PhysicsManager.POSITION_ITERATIONS = this.POSITION_ITERATIONS
         //@ts-ignore
         this.world = phyMgr._world
         this.body = this.world.CreateBody(new b2.BodyDef())

@@ -11,12 +11,8 @@ export default class Launch extends cc.Component {
     @property
     protected showTweakPane: boolean = true
 
-    @property
-    protected physicsFrameInterval: number = 2
-
     protected gpcPolygon: GPCPolygon
     protected physicsBound: PhysicsBound
-    protected curTimeDelta: number = 0
 
     protected onLoad() {
         this.gpcPolygon = this.node.getComponentInChildren(GPCPolygon)
@@ -25,17 +21,13 @@ export default class Launch extends cc.Component {
     }
 
     protected update(dt: number) {
-        if (this.curTimeDelta >= this.physicsFrameInterval / 60) {
-            this.curTimeDelta = 0
-            const temp = new Array<cc.Node>()
-            for (const body of this.node.getComponentsInChildren(cc.RigidBody)) {
-                if (body.type == cc.RigidBodyType.Dynamic)
-                    temp.push(body.node)
-            }
-            if (temp.length != 0)
-                this.physicsBound.createPolygonRigidBody(this.gpcPolygon.boundPolygons, temp)
+        const temp = new Array<cc.Node>()
+        for (const body of this.node.getComponentsInChildren(cc.RigidBody)) {
+            if (body.type == cc.RigidBodyType.Dynamic)
+                temp.push(body.node)
         }
-        this.curTimeDelta += dt
+        if (temp.length != 0)
+            this.physicsBound.createPolygonRigidBody(this.gpcPolygon.boundPolygons, temp)
     }
 
     createTweakPane() {
