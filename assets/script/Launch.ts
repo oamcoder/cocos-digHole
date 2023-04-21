@@ -1,9 +1,9 @@
 import {Pane} from 'tweakpane';
 import {DrawMesh} from "./IGPCType";
-import GPCPolygon from "./GPCPolygon";
 import PhysicsBound from "./PhysicsBound";
 import ccclass = cc._decorator.ccclass;
 import property = cc._decorator.property;
+import PolygonUtil from "./PolygonUtil";
 
 @ccclass
 export default class Launch extends cc.Component {
@@ -11,11 +11,11 @@ export default class Launch extends cc.Component {
     @property
     protected showTweakPane: boolean = true
 
-    protected gpcPolygon: GPCPolygon
+    protected polygonUtil: PolygonUtil
     protected physicsBound: PhysicsBound
 
     protected onLoad() {
-        this.gpcPolygon = this.node.getComponentInChildren(GPCPolygon)
+        this.polygonUtil = this.node.getComponentInChildren(PolygonUtil)
         this.physicsBound = this.node.getComponentInChildren(PhysicsBound)
         this.createTweakPane()
     }
@@ -27,10 +27,10 @@ export default class Launch extends cc.Component {
                 temp.push(body.node)
         }
         if (temp.length != 0)
-            this.physicsBound.createPolygonRigidBody(this.gpcPolygon.boundPolygons, temp)
+            this.physicsBound.createPolygonRigidBody(this.polygonUtil.boundPolygons, temp)
     }
 
-    createTweakPane() {
+    protected createTweakPane() {
         if (!this.showTweakPane)
             return
         const pane = new Pane()
@@ -46,7 +46,7 @@ export default class Launch extends cc.Component {
             },
         });
         input.on('change', (evt) => {
-            this.gpcPolygon.drawTag = DrawMesh[evt.value]
+            this.polygonUtil.drawTag = DrawMesh[evt.value]
         })
         /**physicsDraw------------------------------------------------------------------------*/
         params = {

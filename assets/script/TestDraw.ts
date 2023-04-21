@@ -1,4 +1,5 @@
-import {GPCTrianglePolygon} from './IGPCType'
+import * as polygonClipping from "polygon-clipping";
+import {TrianglePolygon} from './IGPCType'
 
 const {ccclass, property} = cc._decorator;
 
@@ -15,24 +16,26 @@ export default class TestDraw extends cc.Component {
         this.graphics.clear(true)
     }
 
-    drawPolygons(polygons: gpc.Vertex[][]) {
+    drawPolygons(polygons: polygonClipping.Ring[]) {
         this.graphics.clear(true)
-        polygons.forEach(polygon => {
-            polygon.forEach((p, index) => {
-                if (index == 0) this.graphics.moveTo(p.x, p.y)
+        for (let i = 0; i < polygons.length; i++) {
+            const polygon = polygons[i]
+            for (let j = 0; j < polygon.length; j++) {
+                const point = polygon[j]
+                if (j == 0) this.graphics.moveTo(point[0], point[1])
                 else {
-                    this.graphics.lineTo(p.x, p.y)
-                    if (index == polygon.length - 1)
+                    this.graphics.lineTo(point[0], point[1])
+                    if (j == polygon.length - 1)
                         this.graphics.close()
                 }
-            })
-        })
+            }
+        }
         this.graphics.stroke()
     }
 
-    drawTriangles(polygons: GPCTrianglePolygon[]) {
+    drawTriangles(polygons: TrianglePolygon[]) {
         this.graphics.clear(true)
-        polygons.forEach(polygon => {
+        for (let polygon of polygons) {
             let i = 0
             polygon.triangles.forEach(index => {
                 const x = polygon.vertices[index * 2]
@@ -45,7 +48,7 @@ export default class TestDraw extends cc.Component {
                     this.graphics.close()
                 }
             })
-        })
+        }
         this.graphics.stroke()
     }
 }

@@ -1,5 +1,5 @@
-import {circlePolygon} from "intersects";
-import {flattenPoints, isPolygonIntersectCircle} from "./Util";
+import {isPolygonIntersectCircle} from "./Util";
+import * as polygonClipping from "polygon-clipping";
 
 const {ccclass, property} = cc._decorator;
 
@@ -38,9 +38,9 @@ export default class PhysicsBound extends cc.Component {
         this.chainFixtures.length = 0
     }
 
-    createPolygonRigidBody(polygons: gpc.Vertex[][], dynamicBody: cc.Node[]) {
+    createPolygonRigidBody(polygons: polygonClipping.Ring[], dynamicBody: cc.Node[]) {
         const circleCenter: gpc.Vertex = this.tempVertex
-        const candidatePolygons = new Array<gpc.Vertex[]>()
+        const candidatePolygons = new Array<polygonClipping.Ring>()
         for (let body of dynamicBody) {
             const x = body.x
             const y = body.y
@@ -54,6 +54,7 @@ export default class PhysicsBound extends cc.Component {
                     candidatePolygons.push(polygon)
             }
         }
+        // console.log('查看需要生成物理边界的数量:', candidatePolygons.length)
         if (candidatePolygons.length == 0)
             return
         this.cleanFixtures()
@@ -70,7 +71,8 @@ export default class PhysicsBound extends cc.Component {
                 let v2 = this.vec2Pool.pop()
                 if (!v2)
                     v2 = cc.v2()
-                v2.set(p as cc.Vec2)
+                v2.x = p[0]
+                v2.y = p[1]
                 this.node.convertToWorldSpaceAR(v2, v2)
                 v2.x /= PTM_RATIO
                 v2.y /= PTM_RATIO
@@ -87,7 +89,7 @@ export default class PhysicsBound extends cc.Component {
     protected onLoad(): void {
         const phyMgr = cc.director.getPhysicsManager()
         phyMgr.enabled = true
-        phyMgr.enabledAccumulator = true
+        // phyMgr.enabledAccumulator = true
         cc.PhysicsManager.FIXED_TIME_STEP = 1 / this.FIXED_TIME_STEP
         cc.PhysicsManager.VELOCITY_ITERATIONS = this.VELOCITY_ITERATIONS
         cc.PhysicsManager.POSITION_ITERATIONS = this.POSITION_ITERATIONS

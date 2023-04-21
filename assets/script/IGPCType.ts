@@ -1,4 +1,4 @@
-export interface GPCTrianglePolygon {
+export interface TrianglePolygon {
     vertices: Array<number>
     triangles: Array<number>
 }

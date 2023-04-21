@@ -1,15 +1,16 @@
 import * as earcut from 'earcut'
+import * as polygonClipping from "polygon-clipping";
 import TestDraw from './TestDraw'
 import MeshSprite from './MeshSprite'
-import {DrawMesh, GPCTrianglePolygon} from './IGPCType'
+import {DrawMesh, TrianglePolygon} from './IGPCType'
 import {polygonPolygon} from 'intersects'
 import {flattenPoints} from './Util'
-import ccclass = cc._decorator.ccclass
-import property = cc._decorator.property
 import PhysicsBound from "./PhysicsBound";
+import ccclass = cc._decorator.ccclass;
+import property = cc._decorator.property;
 
 @ccclass
-export default class GPCPolygon extends cc.Component {
+export default class PolygonUtil extends cc.Component {
 
     @property({
         displayName: '分割行列数'
@@ -31,36 +32,29 @@ export default class GPCPolygon extends cc.Component {
     })
     protected physicsBound: PhysicsBound = null
 
-    protected polygons: gpc.Polygon[]
+    protected polygons: polygonClipping.MultiPolygon
 
     get boundPolygons() {
-        const arr: Array<gpc.Vertex[]> = []
+        const arr: polygonClipping.Ring[] = []
         for (let polygon of this.polygons) {
-            const temp: gpc.Vertex[] = []
-            arr.push(temp)
-            for (let i = 0; i < polygon.getNumPoints(); i++) {
-                temp.push(polygon.get(i))
+            for (let ring of polygon) {
+                arr.push(ring)
             }
         }
         return arr
     }
 
     get trianglePolygons() {
-        const arr: GPCTrianglePolygon[] = []
+        const arr: TrianglePolygon[] = []
         for (let polygon of this.polygons) {
-            let data: GPCTrianglePolygon = {
+            let data: TrianglePolygon = {
                 vertices: [],
                 triangles: null
             }
             arr.push(data)
-            const inner = polygon.getInnerPolies()
-            for (let poly of inner) {
-                const len = poly.getNumPoints()
-                //todo：不知道为啥还会切出一个点的polygon❓
-                if (len < 2) continue
-                for (let i = 0; i < len; i++) {
-                    const xy = poly.get(i)
-                    data.vertices.push(xy.x, xy.y)
+            for (let ring of polygon) {
+                for (const point of ring) {
+                    data.vertices.push(point[0], point[1])
                 }
             }
             data.triangles = earcut(data.vertices)
@@ -68,33 +62,32 @@ export default class GPCPolygon extends cc.Component {
         return arr
     }
 
-    mergePolygon(points: gpc.ExternalVertex[], draw = true) {
-        const checkBoolPolygons: gpc.Polygon[] = []
-        const leftoverPolygons: gpc.Polygon[] = []
+    mergePolygon(hole: polygonClipping.Ring) {
+        const checkBoolPolygons: polygonClipping.MultiPolygon = []
+        const leftoverPolygons: polygonClipping.MultiPolygon = []
         const tempArr1: number[] = []
         const tempArr2: number[] = []
-        let hole = gpc.Polygon.fromPoints(points)
         flattenPoints(hole, tempArr1)
         //todo:是否考虑用四叉树寻找进行布尔运算的多边形
         for (let polygon of this.polygons) {
+            const subjectPolygon = polygon[0]
             tempArr2.length = 0
-            flattenPoints(polygon, tempArr2)
+            flattenPoints(subjectPolygon, tempArr2)
             polygonPolygon(tempArr1, tempArr2) ?
                 checkBoolPolygons.push(polygon) : leftoverPolygons.push(polygon)
         }
-        this.polygons.length = 0
         // console.log('待进行bool运算的多边形数量', checkBoolPolygons.length)
-        if (checkBoolPolygons.length > 0) {
-            for (let checkBoolPolygon of checkBoolPolygons) {
-                const polygon = checkBoolPolygon.difference(hole)
-                //切出空的多边形、面积过小的多边形直接丢弃
-                if (polygon.getNumPoints() != 0 && Math.abs(polygon.getArea()) >= this.minDiscardArea)
-                    this.polygons.push(polygon)
-            }
+        if (checkBoolPolygons.length == 0)
+            return
+        this.polygons.length = 0
+        for (let checkBoolPolygon of checkBoolPolygons) {
+            const polygon = polygonClipping.difference(checkBoolPolygon, [hole])
+            //切出空的多边形、面积过小的多边形直接丢弃
+            if (polygon.length != 0)
+                this.polygons.push(...polygon)
         }
         this.polygons = this.polygons.concat(leftoverPolygons)
-        if (draw)
-            this.draw()
+        this.draw()
     }
 
     protected onLoad() {
@@ -112,7 +105,7 @@ export default class GPCPolygon extends cc.Component {
     }
 
     protected init() {
-        this.polygons = []
+        const polygons = []
         const row = Math.floor(this.blockConfig.x)
         const col = Math.floor(this.blockConfig.y)
         const startX = -this.node.width / 2
@@ -124,26 +117,41 @@ export default class GPCPolygon extends cc.Component {
             const colIndex = i % col
             const x = startX + colIndex * w
             const y = startY - rowIndex * h
-            this.polygons.push(gpc.Polygon.fromPoints([
+            polygons.push([[
                 [x, y],
                 [x, y - h],
                 [x + w, y - h],
                 [x + w, y]
-            ]))
+            ]])
         }
-        const holeNode = this.node.getChildByName('hole')
+        const holeNode = this.node.getChildByName('holeRoot')
         if (holeNode) {
-            const polygonCtrls = holeNode.getComponentsInChildren(cc.PolygonCollider)
-            const temp: gpc.ExternalVertex[] = []
-            for (const ctrl of polygonCtrls) {
-                for (let point of ctrl.points) {
-                    temp.push([point.x + ctrl.offset.x, point.y + ctrl.offset.y])
+            const holes: polygonClipping.MultiPolygon = []
+            for (let node of holeNode.children) {
+                const hole: polygonClipping.Polygon = []
+                const subjectCol= node.getComponent(cc.PolygonCollider)
+                const edge: polygonClipping.Ring = []
+                for (let point of subjectCol.points) {
+                    edge.push([point.x + subjectCol.offset.x, point.y + subjectCol.offset.y])
                 }
-                this.mergePolygon(temp, false)
-                temp.length = 0
+                hole.push(edge)
+                const cols = node.children[0].getComponentsInChildren(cc.PolygonCollider)
+                for (let col of cols) {
+                    const arr: polygonClipping.Ring = []
+                    for (let point of col.points) {
+                        arr.push([point.x + col.offset.x, point.y + col.offset.y])
+                    }
+                    hole.push(arr)
+                }
+                holes.push(hole)
+            }
+            this.polygons = []
+            for (let polygon of polygons) {
+                this.polygons.push(...polygonClipping.difference(polygon, holes))
             }
             holeNode.destroy()
-        }
+        } else
+            this.polygons = polygons
     }
 
     /**可视化mesh------------------------------------------------------------*/

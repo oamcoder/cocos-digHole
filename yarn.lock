@@ -27,6 +27,18 @@ intersects@^2.7.2:
   resolved "https://registry.yarnpkg.com/intersects/-/intersects-2.7.2.tgz#a3147de29034a8853b0c4dfe1a14d628678828d7"
   integrity sha512-/LtLDq40iFtvnjhouev9p2R+jP+raVONPiD1t8Mcj879pkrLiav99BTRPBkfMPwSYr5vTNws3USGoW+8usS45A==
 
+polygon-clipping@^0.15.3:
+  version "0.15.3"
+  resolved "https://registry.yarnpkg.com/polygon-clipping/-/polygon-clipping-0.15.3.tgz#0215840438470ba2e9e6593625e4ea5c1087b4b7"
+  integrity sha512-ho0Xx5DLkgxRx/+n4O74XyJ67DcyN3Tu9bGYKsnTukGAW6ssnuak6Mwcyb1wHy9MZc9xsUWqIoiazkZB5weECg==
+  dependencies:
+    splaytree "^3.1.0"
+
+splaytree@^3.1.0:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/splaytree/-/splaytree-3.1.1.tgz#e1bc8e68e64ef5a9d5f09d36e6d9f3621795a438"
+  integrity sha512-9FaQ18FF0+sZc/ieEeXHt+Jw2eSpUgUtTLDYB/HXKWvhYVyOc7h1hzkn5MMO3GPib9MmXG1go8+OsBBzs/NMww==
+
 tweakpane@^3.1.7:
   version "3.1.7"
   resolved "https://registry.yarnpkg.com/tweakpane/-/tweakpane-3.1.7.tgz#04d2832c595178ffad6a06638feed65624a54753"

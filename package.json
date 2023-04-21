@@ -15,6 +15,7 @@
     "@types/intersects": "^2.5.0",
     "earcut": "^2.2.4",
     "intersects": "^2.7.2",
+    "polygon-clipping": "^0.15.3",
     "tweakpane": "^3.1.7"
   }
 }

@@ -1,5 +1,6 @@
-import GPCPolygon from './GPCPolygon'
+import GPCPolygon from './PolygonUtil'
 import PhysicsBound from './PhysicsBound'
+import * as polygonClipping from "polygon-clipping";
 
 const {ccclass, property} = cc._decorator;
 
@@ -69,7 +70,7 @@ export default class Touch extends cc.Component {
 
     protected createClickPolygon(touchPos: cc.Vec2) {
         this.node.convertToNodeSpaceAR(touchPos, this.curTouchPos)
-        const polygon: gpc.ExternalVertex[] = []
+        const polygon: polygonClipping.Ring = []
         for (let i = 0; i < this.circleCount; i++) {
             const r = 2 * Math.PI * i / this.circleCount
             const x = this.curTouchPos.x + this.circleRadius * Math.cos(r)
@@ -83,22 +84,19 @@ export default class Touch extends cc.Component {
         this.node.convertToNodeSpaceAR(touchPos, this.curTouchPos)
         this.node.convertToNodeSpaceAR(this.lastTouchPos, this.lastTouchPos)
         this.curTouchPos.sub(this.lastTouchPos, this.dir)
-        const polygon: gpc.ExternalVertex[] = []
+        const polygon: polygonClipping.Ring = []
+
         for (let index = 0; index < this.circleCount; index++) {
             const r = 2 * Math.PI * index / this.circleCount
             this.tempVec2.x = this.circleRadius * Math.cos(r)
             this.tempVec2.y = this.circleRadius * Math.sin(r)
             const dot = this.dir.dot(this.tempVec2)
-            const arr = []
-            if (dot > 0) {
-                arr.push(this.curTouchPos.x + this.tempVec2.x, this.curTouchPos.y + this.tempVec2.y)
-            } else if (dot < 0) {
-                arr.push(this.lastTouchPos.x + this.tempVec2.x, this.lastTouchPos.y + this.tempVec2.y)
-            } else {
-                arr.push(this.curTouchPos.x + this.tempVec2.x, this.curTouchPos.y + this.tempVec2.y)
-                arr.push(this.lastTouchPos.x + this.tempVec2.x, this.lastTouchPos.y + this.tempVec2.y)
-            }
-            polygon.push(arr as gpc.ExternalVertex)
+            let point: polygonClipping.Pair
+            if (dot > 0)
+                point = [this.curTouchPos.x + this.tempVec2.x, this.curTouchPos.y + this.tempVec2.y]
+            else
+                point = [this.lastTouchPos.x + this.tempVec2.x, this.lastTouchPos.y + this.tempVec2.y]
+            polygon.push(point)
         }
         this.gpcPolygon.mergePolygon(polygon)
     }

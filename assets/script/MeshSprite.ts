@@ -1,4 +1,4 @@
-import {GPCTrianglePolygon} from './IGPCType'
+import {TrianglePolygon} from './IGPCType'
 
 const {ccclass, property, requireComponent} = cc._decorator
 
@@ -30,7 +30,7 @@ export default class MeshSprite extends cc.Component {
         this.sprite.spriteFrame['vertices'] = this.vertices
     }
 
-    stroke(data: GPCTrianglePolygon[]) {
+    stroke(data: TrianglePolygon[]) {
         // console.log('查看data: ', data)
         for (const key in this.vertices) {
             this.vertices[key].length = 0
