@@ -1,5 +1,5 @@
 import {isPolygonIntersectCircle} from "./Util";
-import * as polygonClipping from "polygon-clipping";
+import * as PolygonClipping from "polygon-clipping";
 
 const {ccclass, property} = cc._decorator;
 
@@ -38,9 +38,9 @@ export default class PhysicsBound extends cc.Component {
         this.chainFixtures.length = 0
     }
 
-    createPolygonRigidBody(polygons: polygonClipping.Ring[], dynamicBody: cc.Node[]) {
+    createPolygonRigidBody(polygons: PolygonClipping.Ring[], dynamicBody: cc.Node[]) {
         const circleCenter: gpc.Vertex = this.tempVertex
-        const candidatePolygons = new Array<polygonClipping.Ring>()
+        const candidatePolygons = new Array<PolygonClipping.Ring>()
         for (let body of dynamicBody) {
             const x = body.x
             const y = body.y
@@ -90,9 +90,9 @@ export default class PhysicsBound extends cc.Component {
         const phyMgr = cc.director.getPhysicsManager()
         phyMgr.enabled = true
         // phyMgr.enabledAccumulator = true
-        cc.PhysicsManager.FIXED_TIME_STEP = 1 / this.FIXED_TIME_STEP
-        cc.PhysicsManager.VELOCITY_ITERATIONS = this.VELOCITY_ITERATIONS
-        cc.PhysicsManager.POSITION_ITERATIONS = this.POSITION_ITERATIONS
+        // cc.PhysicsManager.FIXED_TIME_STEP = 1 / this.FIXED_TIME_STEP
+        // cc.PhysicsManager.VELOCITY_ITERATIONS = this.VELOCITY_ITERATIONS
+        // cc.PhysicsManager.POSITION_ITERATIONS = this.POSITION_ITERATIONS
         //@ts-ignore
         this.world = phyMgr._world
         this.body = this.world.CreateBody(new b2.BodyDef())

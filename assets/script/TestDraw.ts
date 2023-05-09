@@ -1,5 +1,5 @@
-import * as polygonClipping from "polygon-clipping";
-import {TrianglePolygon} from './IGPCType'
+import * as PolygonClipping from "polygon-clipping";
+import {TrianglePolygon} from './Def'
 
 const {ccclass, property} = cc._decorator;
 
@@ -16,7 +16,7 @@ export default class TestDraw extends cc.Component {
         this.graphics.clear(true)
     }
 
-    drawPolygons(polygons: polygonClipping.Ring[]) {
+    drawPolygons(polygons: PolygonClipping.Ring[]) {
         this.graphics.clear(true)
         for (let i = 0; i < polygons.length; i++) {
             const polygon = polygons[i]

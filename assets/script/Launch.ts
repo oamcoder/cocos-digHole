@@ -1,9 +1,9 @@
 import {Pane} from 'tweakpane';
-import {DrawMesh} from "./IGPCType";
+import {DrawMesh} from "./Def";
 import PhysicsBound from "./PhysicsBound";
+import PolygonUtil from "./PolygonUtil";
 import ccclass = cc._decorator.ccclass;
 import property = cc._decorator.property;
-import PolygonUtil from "./PolygonUtil";
 
 @ccclass
 export default class Launch extends cc.Component {
@@ -57,8 +57,8 @@ export default class Launch extends cc.Component {
             cc.director.getPhysicsManager().debugDrawFlags = evt.value ? 7 : 0
         })
 
-        const bodys = document.getElementsByClassName('tp-dfwv')[0]
+        const body = document.getElementsByClassName('tp-dfwv')[0]
         //@ts-ignore
-        bodys.style.top = '60px'
+        body.style.top = '60px'
     }
 }

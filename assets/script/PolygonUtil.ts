@@ -1,8 +1,8 @@
 import * as earcut from 'earcut'
-import * as polygonClipping from "polygon-clipping";
+import * as PolygonClipping from "polygon-clipping";
 import TestDraw from './TestDraw'
 import MeshSprite from './MeshSprite'
-import {DrawMesh, TrianglePolygon} from './IGPCType'
+import {DrawMesh, TrianglePolygon} from './Def'
 import {polygonPolygon} from 'intersects'
 import {flattenPoints} from './Util'
 import PhysicsBound from "./PhysicsBound";
@@ -32,10 +32,10 @@ export default class PolygonUtil extends cc.Component {
     })
     protected physicsBound: PhysicsBound = null
 
-    protected polygons: polygonClipping.MultiPolygon
+    protected polygons: PolygonClipping.MultiPolygon
 
     get boundPolygons() {
-        const arr: polygonClipping.Ring[] = []
+        const arr: PolygonClipping.Ring[] = []
         for (let polygon of this.polygons) {
             for (let ring of polygon) {
                 arr.push(ring)
@@ -62,9 +62,9 @@ export default class PolygonUtil extends cc.Component {
         return arr
     }
 
-    mergePolygon(hole: polygonClipping.Ring) {
-        const checkBoolPolygons: polygonClipping.MultiPolygon = []
-        const leftoverPolygons: polygonClipping.MultiPolygon = []
+    mergePolygon(hole: PolygonClipping.Ring) {
+        const checkBoolPolygons: PolygonClipping.MultiPolygon = []
+        const leftoverPolygons: PolygonClipping.MultiPolygon = []
         const tempArr1: number[] = []
         const tempArr2: number[] = []
         flattenPoints(hole, tempArr1)
@@ -81,7 +81,7 @@ export default class PolygonUtil extends cc.Component {
             return
         this.polygons.length = 0
         for (let checkBoolPolygon of checkBoolPolygons) {
-            const polygon = polygonClipping.difference(checkBoolPolygon, [hole])
+            const polygon = PolygonClipping.difference(checkBoolPolygon, [hole])
             //切出空的多边形、面积过小的多边形直接丢弃
             if (polygon.length != 0)
                 this.polygons.push(...polygon)
@@ -126,18 +126,18 @@ export default class PolygonUtil extends cc.Component {
         }
         const holeNode = this.node.getChildByName('holeRoot')
         if (holeNode) {
-            const holes: polygonClipping.MultiPolygon = []
+            const holes: PolygonClipping.MultiPolygon = []
             for (let node of holeNode.children) {
-                const hole: polygonClipping.Polygon = []
-                const subjectCol= node.getComponent(cc.PolygonCollider)
-                const edge: polygonClipping.Ring = []
+                const hole: PolygonClipping.Polygon = []
+                const subjectCol = node.getComponent(cc.PolygonCollider)
+                const edge: PolygonClipping.Ring = []
                 for (let point of subjectCol.points) {
                     edge.push([point.x + subjectCol.offset.x, point.y + subjectCol.offset.y])
                 }
                 hole.push(edge)
                 const cols = node.children[0].getComponentsInChildren(cc.PolygonCollider)
                 for (let col of cols) {
-                    const arr: polygonClipping.Ring = []
+                    const arr: PolygonClipping.Ring = []
                     for (let point of col.points) {
                         arr.push([point.x + col.offset.x, point.y + col.offset.y])
                     }
@@ -147,7 +147,7 @@ export default class PolygonUtil extends cc.Component {
             }
             this.polygons = []
             for (let polygon of polygons) {
-                this.polygons.push(...polygonClipping.difference(polygon, holes))
+                this.polygons.push(...PolygonClipping.difference(polygon, holes))
             }
             holeNode.destroy()
         } else

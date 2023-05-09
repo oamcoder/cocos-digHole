@@ -1,4 +1,4 @@
-import {TrianglePolygon} from './IGPCType'
+import {TrianglePolygon} from './Def'
 
 const {ccclass, property, requireComponent} = cc._decorator
 
