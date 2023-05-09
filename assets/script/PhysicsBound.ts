@@ -29,7 +29,7 @@ export default class PhysicsBound extends cc.Component {
     protected vec2Pool: cc.Vec2[] = []
     protected chainShapePool: b2.ChainShape[] = []
     protected chainFixtures: b2.Fixture[] = []
-    protected tempVertex: gpc.Vertex = {x: 0, y: 0}
+    protected tempVertex: PolygonClipping.Pair = [0, 0]
 
     cleanFixtures() {
         for (let fixture of this.chainFixtures) {
@@ -39,17 +39,16 @@ export default class PhysicsBound extends cc.Component {
     }
 
     createPolygonRigidBody(polygons: PolygonClipping.Ring[], dynamicBody: cc.Node[]) {
-        const circleCenter: gpc.Vertex = this.tempVertex
         const candidatePolygons = new Array<PolygonClipping.Ring>()
         for (let body of dynamicBody) {
             const x = body.x
             const y = body.y
             const r = Math.max(body.height / 2, body.width / 2)
-            circleCenter.x = x
-            circleCenter.y = y
+            this.tempVertex[0] = x
+            this.tempVertex[1] = y
             for (const polygon of polygons) {
                 const isEmpty = !candidatePolygons.find(poly => poly == polygon)
-                const isIntersect = isPolygonIntersectCircle(polygon, circleCenter, r)
+                const isIntersect = isPolygonIntersectCircle(polygon, this.tempVertex, r)
                 if (isEmpty && isIntersect)
                     candidatePolygons.push(polygon)
             }
